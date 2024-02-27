@@ -1,0 +1,27 @@
+---
+language: node_js
+node_js:
+  - lts/*
+cache:
+  directories:
+    - ~/.npm
+before_script:
+  - npm install -g npm@latest
+  - npm install expo-cli
+  - npm ci
+
+jobs:
+  include:
+    - stage: test
+      if: branch = master || branch = development
+      node_js: lts/*
+      script:
+        - npm test
+    - stage: deploy
+      if: branch = master
+      node_js: lts/*
+      script:
+        - 'if [ "$TRAVIS_EVENT_TYPE" = "push" ]; then printf "%s\n" "GOOGLE_API_KEY=$GOOGLE_API_KEY" "BACKEND_URL=$BACKEND_URL" "WS_URL=$WS_URL" >.env; fi'
+        - 'if [ "$TRAVIS_EVENT_TYPE" = "push" ]; then echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p; fi'
+        - 'if [ "$TRAVIS_EVENT_TYPE" = "push" ]; then expo login -u $EXPO_USERNAME -p $EXPO_PASSWORD; fi'
+        - 'if [ "$TRAVIS_EVENT_TYPE" = "push" ]; then expo publish --non-interactive; fi'
